@@ -1,8 +1,8 @@
 import pandas as pd
 from bs4 import BeautifulSoup
 import requests
-from requests import get
 import mysql.connector
+from mysql.connector import Error
 import logging
 
 logging.basicConfig(filename='./logs_scrapper.log', level=logging.DEBUG,
@@ -17,7 +17,11 @@ try:
         port=3306,
         database="fellowshippl"
     )
-# pobieram tickery z bazy
+
+# -----------------------------------
+# Downloading tickers from base
+# -----------------------------------
+
     curs = db.cursor()
 
     tickers = """SELECT DISTINCT(ticker) FROM financial_calculated_data fcd """
@@ -35,16 +39,20 @@ finally:
     curs.close()
     db.close()
 
-# tworzę listę url
+# -----------------------------------
+# Making list of url
+# -----------------------------------
+
 page_url = []
 for i, ticker in enumerate(data, start=1):
     page = f'https://macronext.pl/pl/kalendarium/{ticker}/'
     page_url.append(page)
 print(page_url)
 
-"""Zadanie:"""
-"""Zrobić pętlę, która pobiera linki z listy page_url 
-i po kolei skrapuje każdy link i nastepnie dorzuca dane do tabeli"""
+# -----------------------------------
+# Scraping data from url and
+# dropping to common table
+# -----------------------------------
 
 df_general = pd.DataFrame(columns=["Data", 'Spółka', "Wydarzenie"])
 for i, page in enumerate(page_url):
@@ -53,6 +61,7 @@ for i, page in enumerate(page_url):
     ticker = page.split("/")[-2]
 
     soup: BeautifulSoup = BeautifulSoup(download_html.text)
+
     with open('downloaded.html', 'w', encoding="utf-8") as file:
         file.write(soup.prettify())
     # print(soup.prettify())
@@ -75,7 +84,7 @@ for i, page in enumerate(page_url):
         print(element.text)
 
     import re
-    regex = re.compile('_\[ \w \] ')
+    regex = re.compile('_\[ \w ] ')
 
     table_columns = []
     for element in table_head:
